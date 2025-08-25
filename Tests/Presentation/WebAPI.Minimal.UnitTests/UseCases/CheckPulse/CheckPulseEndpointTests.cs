@@ -1,11 +1,11 @@
 ﻿using Application.Shared.Errors;
+using Application.Shared.OpenResult;
 using Application.UseCases.CheckPulse.Abstractions;
 using Application.UseCases.CheckPulse.Errors;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
-using OpenResult;
 using System.Net;
 using WebAPI.Minimal.UseCases.CheckPulse;
 

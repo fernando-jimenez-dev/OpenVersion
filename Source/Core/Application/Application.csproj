@@ -9,11 +9,9 @@
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="12.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
-    <PackageReference Include="OpenResult" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="UseCases\ComputeNextVersion\Errors\" />
     <Folder Include="UseCases\ComputeNextVersion\Infrastructure\" />
   </ItemGroup>
 

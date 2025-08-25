@@ -1,4 +1,4 @@
-﻿using OpenResult;
+﻿using Application.Shared.OpenResult;
 
 namespace Application.Shared.Abstractions.UseCase
 {
