@@ -1,14 +1,13 @@
 ﻿using Application.Shared.OpenResult;
+using Application.UseCases.ComputeNextVersion.Models;
 
 namespace Application.UseCases.ComputeNextVersion.Abstractions;
 
 public interface IVersionBumper
 {
-    Task<Result<NextRelease>> CalculateNextReleaseNumber(
+    Task<Result<DomainVersion>> CalculateNextVersion(
         string branchName,
-        IReadOnlyDictionary<string, IVersionRepository.Version> currentReleases,
+        IReadOnlyDictionary<string, DomainVersion> currentVersions,
         CancellationToken cancellationToken = default
     );
-
-    public record NextRelease(IVersionRepository.Version Version, string? Meta = null);
 }

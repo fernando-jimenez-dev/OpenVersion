@@ -23,15 +23,15 @@ public class ComputeNextVersionUseCase : IComputeNextVersionUseCase
         if (currentVersionsResult.Failed(out var getCurrentVersionsError)) return Failure(getCurrentVersionsError);
 
         var currentVersions = currentVersionsResult.Value!;
-        var nextReleaseResult = await _versionBumper.CalculateNextReleaseNumber(input.BranchName, currentVersions!, cancellationToken);
-        if (nextReleaseResult.Failed(out var calculateNextReleaseError)) return Failure(calculateNextReleaseError);
+        var nextVersionResult = await _versionBumper.CalculateNextVersion(input.BranchName, currentVersions!, cancellationToken);
+        if (nextVersionResult.Failed(out var calculateNextVersionError)) return Failure(calculateNextVersionError);
 
-        var nextRelease = nextReleaseResult.Value!;
-        var nextVersionString = string.IsNullOrWhiteSpace(nextRelease.Meta)
-            ? nextRelease.Version.ReleaseNumber
-            : $"{nextRelease.Version.ReleaseNumber}+{nextRelease.Meta}";
+        var nextVersion = nextVersionResult.Value!;
+        var nextVersionString = string.IsNullOrWhiteSpace(nextVersion.Meta)
+            ? nextVersion.ReleaseNumber
+            : $"{nextVersion.ReleaseNumber}+{nextVersion.Meta}";
 
-        var saveResult = await _repository.SaveVersion(nextRelease.Version, cancellationToken);
+        var saveResult = await _repository.SaveVersion(nextVersion, cancellationToken);
         if (saveResult.Failed(out var saveVersionError)) return Failure(saveVersionError);
 
         return Result.Success(new IComputeNextVersionUseCase.Output(nextVersionString));
