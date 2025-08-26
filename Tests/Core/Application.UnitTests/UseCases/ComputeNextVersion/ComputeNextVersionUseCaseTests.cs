@@ -36,7 +36,7 @@ public class ComputeNextVersionUseCaseTests
         // Arrange
         var currentVersion = new DomainVersion(1, 1, branchName, releaseNumber, DateTimeOffset.UtcNow.AddDays(-1));
         var currentVersions = new Dictionary<string, DomainVersion?> { { branchName, currentVersion } };
-        _versionRepository.GetCurrentVersions(branchName, cancellationToken: Arg.Any<CancellationToken>())
+        _versionRepository.GetCurrentVersions(Arg.Any<CancellationToken>())
             .Returns(Result<IReadOnlyDictionary<string, DomainVersion?>>.Success(currentVersions));
 
         var nextVersion = new DomainVersion(currentVersion.Id, currentVersion.ProjectId, currentVersion.IdentifierName, nextReleaseNumber, DateTimeOffset.UtcNow, meta);
@@ -67,7 +67,7 @@ public class ComputeNextVersionUseCaseTests
         var currentMainVersion = new DomainVersion(1, 1, "main", "1.0.0.0", DateTimeOffset.UtcNow.AddDays(-1));
         var currentVersions = new Dictionary<string, DomainVersion?> { { branchName, currentMainVersion } };
         _versionRepository
-            .GetCurrentVersions(branchName, cancellationToken: Arg.Any<CancellationToken>())
+            .GetCurrentVersions(Arg.Any<CancellationToken>())
             .Returns(Result<IReadOnlyDictionary<string, DomainVersion?>>.Success(currentVersions));
 
         var newVersion = new DomainVersion(2, currentMainVersion.ProjectId, branchName, "1.0.0.1", DateTimeOffset.UtcNow, "feature-new-item");
@@ -90,6 +90,43 @@ public class ComputeNextVersionUseCaseTests
         output.NextVersion.ShouldBe(expectedNextVersion);
     }
 
+    [Fact]
+    public async Task Run_ShouldRetryOnVersionConcurrencyError_AndSucceed()
+    {
+        // Arrange
+        var branchName = "feature/concurrent";
+        var currentMainVersion = new DomainVersion(1, 1, branchName, "1.0.0.0", DateTimeOffset.UtcNow.AddDays(-1));
+        var currentVersions = new Dictionary<string, DomainVersion?> { { branchName, currentMainVersion } };
+        _versionRepository
+            .GetCurrentVersions(Arg.Any<CancellationToken>())
+            .Returns(Result<IReadOnlyDictionary<string, DomainVersion?>>.Success(currentVersions));
+
+        var newVersion = new DomainVersion(2, currentMainVersion.ProjectId, branchName, "1.0.0.1", DateTimeOffset.UtcNow, "concurrent-meta");
+        _versionBumper
+            .CalculateNextVersion(branchName, currentVersions!, Arg.Any<CancellationToken>())
+            .Returns(Result<DomainVersion>.Success(newVersion));
+
+        // Simulate 2 concurrency errors, then success
+        int callCount = 0;
+        _versionRepository
+            .SaveVersion(newVersion, Arg.Any<CancellationToken>())
+            .Returns(ci =>
+            {
+                callCount++;
+                if (callCount < 3)
+                    return Result.Failure(new VersionConcurrencyError(newVersion));
+                return Result.Success();
+            });
+
+        // Act
+        var input = new IComputeNextVersionUseCase.Input(branchName);
+        var result = await _useCase.Run(input);
+
+        // Assert
+        result.IsSuccess.ShouldBeTrue();
+        result.Value!.NextVersion.ShouldBe($"{newVersion.ReleaseNumber}+{newVersion.Meta}");
+    }
+
     #endregion Success Scenarios
 
     #region Failure Scenarios
@@ -103,7 +140,7 @@ public class ComputeNextVersionUseCaseTests
         var releases = new Dictionary<string, DomainVersion?> { { branchName, release } };
 
         _versionRepository
-            .GetCurrentVersions(branchName, cancellationToken: Arg.Any<CancellationToken>())
+            .GetCurrentVersions(Arg.Any<CancellationToken>())
             .Returns(Result<IReadOnlyDictionary<string, DomainVersion?>>.Success(releases));
         _versionBumper
             .CalculateNextVersion(branchName, releases!, Arg.Any<CancellationToken>())
@@ -125,7 +162,7 @@ public class ComputeNextVersionUseCaseTests
     {
         // Arrange
         _versionRepository
-            .GetCurrentVersions(Arg.Any<string>(), cancellationToken: Arg.Any<CancellationToken>())
+            .GetCurrentVersions(Arg.Any<CancellationToken>())
             .Returns(Result<IReadOnlyDictionary<string, DomainVersion?>>
                 .Failure(new ApplicationError("unexpected", "Unexpected error"))
             );
@@ -150,7 +187,7 @@ public class ComputeNextVersionUseCaseTests
         var currentMainVersion = new DomainVersion(1, 1, "main", "1.0.0.0", DateTimeOffset.UtcNow.AddDays(-1));
         var currentVersions = new Dictionary<string, DomainVersion?> { { branchName, currentMainVersion } };
         _versionRepository
-            .GetCurrentVersions(branchName, cancellationToken: Arg.Any<CancellationToken>())
+            .GetCurrentVersions(Arg.Any<CancellationToken>())
             .Returns(Result<IReadOnlyDictionary<string, DomainVersion?>>.Success(currentVersions));
 
         var newVersion = new DomainVersion(2, currentMainVersion.ProjectId, branchName, "1.0.0.1", DateTimeOffset.UtcNow, "feature-new-item");
@@ -172,6 +209,36 @@ public class ComputeNextVersionUseCaseTests
         var repositoryError = error.ShouldBeOfType<ApplicationError>();
         repositoryError.Type.ShouldBe("Unexpected");
         repositoryError.Message.ShouldBe("Something bad happened");
+    }
+
+    [Fact]
+    public async Task Run_ShouldFailAfterMaxRetries_OnVersionConcurrencyError()
+    {
+        // Arrange
+        var branchName = "feature/concurrent";
+        var currentMainVersion = new DomainVersion(1, 1, branchName, "1.0.0.0", DateTimeOffset.UtcNow.AddDays(-1));
+        var currentVersions = new Dictionary<string, DomainVersion?> { { branchName, currentMainVersion } };
+        _versionRepository
+            .GetCurrentVersions(Arg.Any<CancellationToken>())
+            .Returns(Result<IReadOnlyDictionary<string, DomainVersion?>>.Success(currentVersions));
+
+        var newVersion = new DomainVersion(2, currentMainVersion.ProjectId, branchName, "1.0.0.1", DateTimeOffset.UtcNow, "concurrent-meta");
+        _versionBumper
+            .CalculateNextVersion(branchName, currentVersions!, Arg.Any<CancellationToken>())
+            .Returns(Result<DomainVersion>.Success(newVersion));
+
+        // Always return concurrency error
+        _versionRepository
+            .SaveVersion(newVersion, Arg.Any<CancellationToken>())
+            .Returns(Result.Failure(new VersionConcurrencyError(newVersion)));
+
+        // Act
+        var input = new IComputeNextVersionUseCase.Input(branchName);
+        var result = await _useCase.Run(input);
+
+        // Assert
+        result.IsSuccess.ShouldBeFalse();
+        result.Error.ShouldBeOfType<VersionConcurrencyError>();
     }
 
     #endregion Failure Scenarios

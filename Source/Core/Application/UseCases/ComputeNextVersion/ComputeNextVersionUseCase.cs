@@ -1,5 +1,6 @@
 ﻿using Application.Shared.OpenResult;
 using Application.UseCases.ComputeNextVersion.Abstractions;
+using Application.UseCases.ComputeNextVersion.Errors;
 using OpenResult;
 
 namespace Application.UseCases.ComputeNextVersion;
@@ -19,22 +20,36 @@ public class ComputeNextVersionUseCase : IComputeNextVersionUseCase
         IComputeNextVersionUseCase.Input input,
         CancellationToken cancellationToken = default)
     {
-        var currentVersionsResult = await _repository.GetCurrentVersions(input.BranchName, cancellationToken);
-        if (currentVersionsResult.Failed(out var getCurrentVersionsError)) return Failure(getCurrentVersionsError);
+        const int maxRetries = 3;
+        int attempt = 0;
+        Error? error = null;
 
-        var currentVersions = currentVersionsResult.Value!;
-        var nextVersionResult = await _versionBumper.CalculateNextVersion(input.BranchName, currentVersions!, cancellationToken);
-        if (nextVersionResult.Failed(out var calculateNextVersionError)) return Failure(calculateNextVersionError);
+        while (attempt < maxRetries)
+        {
+            var currentVersionsResult = await _repository.GetCurrentVersions(cancellationToken);
+            if (currentVersionsResult.Failed(out var getCurrentVersionsError)) return Failure(getCurrentVersionsError);
 
-        var nextVersion = nextVersionResult.Value!;
-        var nextVersionString = string.IsNullOrWhiteSpace(nextVersion.Meta)
-            ? nextVersion.ReleaseNumber
-            : $"{nextVersion.ReleaseNumber}+{nextVersion.Meta}";
+            var currentVersions = currentVersionsResult.Value!;
+            var nextVersionResult = await _versionBumper.CalculateNextVersion(input.BranchName, currentVersions!, cancellationToken);
+            if (nextVersionResult.Failed(out var calculateNextVersionError)) return Failure(calculateNextVersionError);
 
-        var saveResult = await _repository.SaveVersion(nextVersion, cancellationToken);
-        if (saveResult.Failed(out var saveVersionError)) return Failure(saveVersionError);
+            var nextVersion = nextVersionResult.Value!;
+            var nextVersionString = string.IsNullOrWhiteSpace(nextVersion.Meta)
+                ? nextVersion.ReleaseNumber
+                : $"{nextVersion.ReleaseNumber}+{nextVersion.Meta}";
 
-        return Result.Success(new IComputeNextVersionUseCase.Output(nextVersionString));
+            var saveResult = await _repository.SaveVersion(nextVersion, cancellationToken);
+            if (saveResult.IsSuccess)
+                return Result.Success(new IComputeNextVersionUseCase.Output(nextVersionString));
+
+            if (saveResult.Failed(out var saveError) && saveError is not VersionConcurrencyError)
+                return Failure(saveError);
+
+            attempt++;
+            error = saveResult.Error;
+        }
+
+        return Failure(error);
     }
 
     private static Result<IComputeNextVersionUseCase.Output> Failure(Error? error) =>
