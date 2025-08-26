@@ -10,5 +10,5 @@ public interface IVersionBumper
         CancellationToken cancellationToken = default
     );
 
-    public record NextRelease(string Number, string? Meta = null);
+    public record NextRelease(IVersionRepository.Version Version, string? Meta = null);
 }

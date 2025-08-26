@@ -17,27 +17,32 @@ public class ComputeNextVersionUseCase : IComputeNextVersionUseCase
 
     public async Task<Result<IComputeNextVersionUseCase.Output>> Run(IComputeNextVersionUseCase.Input input, CancellationToken cancellationToken = default)
     {
-        var getLatestVersionResult = await _repository.GetCurrentReleases(input.BranchName, cancellationToken: cancellationToken);
-        if (getLatestVersionResult.IsSuccess)
+        var getCurrentVersionsResult = await _repository.GetCurrentVersions(input.BranchName, cancellationToken: cancellationToken);
+        if (getCurrentVersionsResult.IsSuccess)
         {
-            var currentReleases = getLatestVersionResult.Value;
-            var getNextVersionResult = await _versionManager.CalculateNextReleaseNumber(
-                input.BranchName, currentReleases!, cancellationToken
+            var currentVersions = getCurrentVersionsResult.Value;
+            var calculateNextReleaseResult = await _versionManager.CalculateNextReleaseNumber(
+                input.BranchName, currentVersions!, cancellationToken
             );
-            if (getNextVersionResult.IsSuccess)
+            if (calculateNextReleaseResult.IsSuccess)
             {
-                var nextRelease = getNextVersionResult.Value!;
-                var nextVersion = string.IsNullOrWhiteSpace(nextRelease.Meta)
-                    ? nextRelease.Number
-                    : $"{nextRelease.Number}+{nextRelease.Meta}";
+                var nextRelease = calculateNextReleaseResult.Value!;
+                var nextFullReleaseNumber = string.IsNullOrWhiteSpace(nextRelease.Meta)
+                    ? nextRelease.Version.ReleaseNumber
+                    : $"{nextRelease.Version.ReleaseNumber}+{nextRelease.Meta}";
 
-                return Result.Success(new IComputeNextVersionUseCase.Output(nextVersion));
+                var saveResult = await _repository.SaveVersion(nextRelease.Version, cancellationToken);
+                if (saveResult.IsSuccess)
+                {
+                    return Result.Success(new IComputeNextVersionUseCase.Output(nextFullReleaseNumber));
+                }
+                return Fail(saveResult.Error!);
             }
 
-            return Fail(getNextVersionResult.Error!);
+            return Fail(calculateNextReleaseResult.Error!);
         }
 
-        return Fail(getLatestVersionResult.Error!);
+        return Fail(getCurrentVersionsResult.Error!);
     }
 
     private static Result<IComputeNextVersionUseCase.Output> Fail(Error error) => Result<IComputeNextVersionUseCase.Output>.Failure(error);

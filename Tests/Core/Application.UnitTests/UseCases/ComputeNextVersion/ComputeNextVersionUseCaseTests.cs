@@ -29,25 +29,37 @@ public class ComputeNextVersionUseCaseTests
     [InlineData("fix/card-1", "1.0.0.0", "fix-item-1", "1.0.0.1")]
     public async Task ShouldComputeNextVersion(string branchName, string releaseNumber, string meta, string nextReleaseNumber)
     {
-        var release = new IVersionRepository.Version(
+        var currentVersion = new IVersionRepository.Version(
             id: 1,
             projectId: 1,
             identifierName: branchName,
             releaseNumber: releaseNumber,
             lastUpdated: (DateTimeOffset.UtcNow).AddDays(-1)
         );
-        var releases = new Dictionary<string, IVersionRepository.Version?>
+        var currentVersions = new Dictionary<string, IVersionRepository.Version?>
         {
-            { branchName, release }
+            { branchName, currentVersion }
         };
         _versionRepository
-            .GetCurrentReleases(branchName, cancellationToken: Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyDictionary<string, IVersionRepository.Version?>>.Success(releases));
+            .GetCurrentVersions(branchName, cancellationToken: Arg.Any<CancellationToken>())
+            .Returns(Result<IReadOnlyDictionary<string, IVersionRepository.Version?>>.Success(currentVersions));
 
-        var nextRelease = new IVersionBumper.NextRelease(nextReleaseNumber, meta);
+        var nextVersion = new IVersionRepository.Version(
+            id: currentVersion.Id,
+            projectId: currentVersion.ProjectId,
+            identifierName: currentVersion.IdentifierName,
+            releaseNumber: nextReleaseNumber,
+            lastUpdated: DateTimeOffset.UtcNow
+        );
+        var nextRelease = new IVersionBumper.NextRelease(nextVersion, meta);
+
         _versionBumper
-            .CalculateNextReleaseNumber(branchName, releases!, Arg.Any<CancellationToken>())
+            .CalculateNextReleaseNumber(branchName, currentVersions!, Arg.Any<CancellationToken>())
             .Returns(Result<IVersionBumper.NextRelease>.Success(nextRelease));
+
+        _versionRepository
+            .SaveVersion(nextVersion, Arg.Any<CancellationToken>())
+            .Returns(Result.Success());
 
         var input = new IComputeNextVersionUseCase.Input(branchName);
         var result = await _useCase.Run(input);
@@ -59,40 +71,51 @@ public class ComputeNextVersionUseCaseTests
     }
 
     [Fact]
-    public async Task ShouldComputeNewVersionWhenPreviousDoesNotExist()
+    public async Task ShouldComputeNewVersion_WhenPreviousDoesNotExist()
     {
         var branchName = "feature/new-item";
-        var release = new IVersionRepository.Version(
+        var currentMainVersion = new IVersionRepository.Version(
             id: 1,
             projectId: 1,
             identifierName: "main",
             releaseNumber: "1.0.0.0",
             lastUpdated: (DateTimeOffset.UtcNow).AddDays(-1)
         );
-        var releases = new Dictionary<string, IVersionRepository.Version?>
+        var currentVersions = new Dictionary<string, IVersionRepository.Version?>
         {
-            { branchName, release }
+            { branchName, currentMainVersion }
         };
         _versionRepository
-            .GetCurrentReleases(branchName, cancellationToken: Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyDictionary<string, IVersionRepository.Version?>>.Success(releases));
+            .GetCurrentVersions(branchName, cancellationToken: Arg.Any<CancellationToken>())
+            .Returns(Result<IReadOnlyDictionary<string, IVersionRepository.Version?>>.Success(currentVersions));
 
-        var nextRelease = new IVersionBumper.NextRelease("1.0.0.1", "feature-new-item");
+        var newVersion = new IVersionRepository.Version(
+            id: 2,
+            projectId: currentMainVersion.ProjectId,
+            identifierName: branchName,
+            releaseNumber: "1.0.0.1",
+            lastUpdated: DateTimeOffset.UtcNow
+        );
+        var nextRelease = new IVersionBumper.NextRelease(newVersion, "feature-new-item");
         _versionBumper
-            .CalculateNextReleaseNumber(branchName, releases!, Arg.Any<CancellationToken>())
+            .CalculateNextReleaseNumber(branchName, currentVersions!, Arg.Any<CancellationToken>())
             .Returns(Result<IVersionBumper.NextRelease>.Success(nextRelease));
+
+        _versionRepository
+            .SaveVersion(newVersion, Arg.Any<CancellationToken>())
+            .Returns(Result.Success());
 
         var input = new IComputeNextVersionUseCase.Input(branchName);
         var result = await _useCase.Run(input);
 
         result.IsSuccess.ShouldBeTrue();
         var output = result.Value.ShouldNotBeNull();
-        var expectedNextVersion = $"{nextRelease.Number}+{nextRelease.Meta}";
+        var expectedNextVersion = $"{nextRelease.Version.ReleaseNumber}+{nextRelease.Meta}";
         output.NextVersion.ShouldBe(expectedNextVersion);
     }
 
     [Fact]
-    public async Task ShouldFailWhenVersionBumperDoesNotRecognizeBranch()
+    public async Task ShouldFail_WhenVersionBumperDoesNotRecognizeBranch()
     {
         var branchName = "random-branch";
         var release = new IVersionRepository.Version(
@@ -107,7 +130,7 @@ public class ComputeNextVersionUseCaseTests
             { branchName, release }
         };
         _versionRepository
-            .GetCurrentReleases(branchName, cancellationToken: Arg.Any<CancellationToken>())
+            .GetCurrentVersions(branchName, cancellationToken: Arg.Any<CancellationToken>())
             .Returns(Result<IReadOnlyDictionary<string, IVersionRepository.Version?>>.Success(releases));
 
         _versionBumper
@@ -124,10 +147,10 @@ public class ComputeNextVersionUseCaseTests
     }
 
     [Fact]
-    public async Task ShouldFailWhenVersionRepositoryFails()
+    public async Task ShouldFail_WhenGetCurrentVersionsFails()
     {
         _versionRepository
-            .GetCurrentReleases(Arg.Any<string>(), cancellationToken: Arg.Any<CancellationToken>())
+            .GetCurrentVersions(Arg.Any<string>(), cancellationToken: Arg.Any<CancellationToken>())
             .Returns(Result<IReadOnlyDictionary<string, IVersionRepository.Version?>>
                 .Failure(new ApplicationError("unexpected", "Unexpected error")
             ));
@@ -140,5 +163,50 @@ public class ComputeNextVersionUseCaseTests
         var repositoryError = error.ShouldBeOfType<ApplicationError>();
         repositoryError.Type.ShouldBe("unexpected");
         repositoryError.Message.ShouldBe("Unexpected error");
+    }
+
+    [Fact]
+    public async Task ShouldFail_WhenSavingVersionFails()
+    {
+        var branchName = "feature/new-item";
+        var currentMainVersion = new IVersionRepository.Version(
+            id: 1,
+            projectId: 1,
+            identifierName: "main",
+            releaseNumber: "1.0.0.0",
+            lastUpdated: (DateTimeOffset.UtcNow).AddDays(-1)
+        );
+        var currentVersions = new Dictionary<string, IVersionRepository.Version?>
+        {
+            { branchName, currentMainVersion }
+        };
+        _versionRepository
+            .GetCurrentVersions(branchName, cancellationToken: Arg.Any<CancellationToken>())
+            .Returns(Result<IReadOnlyDictionary<string, IVersionRepository.Version?>>.Success(currentVersions));
+
+        var newVersion = new IVersionRepository.Version(
+            id: 2,
+            projectId: currentMainVersion.ProjectId,
+            identifierName: branchName,
+            releaseNumber: "1.0.0.1",
+            lastUpdated: DateTimeOffset.UtcNow
+        );
+        var nextRelease = new IVersionBumper.NextRelease(newVersion, "feature-new-item");
+        _versionBumper
+            .CalculateNextReleaseNumber(branchName, currentVersions!, Arg.Any<CancellationToken>())
+            .Returns(Result<IVersionBumper.NextRelease>.Success(nextRelease));
+
+        _versionRepository
+            .SaveVersion(newVersion, Arg.Any<CancellationToken>())
+            .Returns(Result.Failure(new ApplicationError("Unexpected", "Something bad happened")));
+
+        var input = new IComputeNextVersionUseCase.Input(branchName);
+        var result = await _useCase.Run(input);
+
+        result.IsSuccess.ShouldBeFalse();
+        var error = result.Error.ShouldNotBeNull();
+        var repositoryError = error.ShouldBeOfType<ApplicationError>();
+        repositoryError.Type.ShouldBe("Unexpected");
+        repositoryError.Message.ShouldBe("Something bad happened");
     }
 }
