@@ -2,5 +2,5 @@
 
 public partial interface IComputeNextVersionUseCase
 {
-    public record Input(string BranchName);
+    public record Input(string BranchName, IReadOnlyDictionary<string, string?>? Context = null);
 }

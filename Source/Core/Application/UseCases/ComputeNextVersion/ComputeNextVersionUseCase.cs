@@ -30,7 +30,7 @@ public class ComputeNextVersionUseCase : IComputeNextVersionUseCase
             if (currentVersionsResult.Failed(out var getCurrentVersionsError)) return Failure(getCurrentVersionsError);
 
             var currentVersions = currentVersionsResult.Value!;
-            var nextVersionResult = await _versionBumper.CalculateNextVersion(input.BranchName, currentVersions!, cancellationToken);
+            var nextVersionResult = await _versionBumper.CalculateNextVersion(input.BranchName, currentVersions!, input.Context, cancellationToken);
             if (nextVersionResult.Failed(out var calculateNextVersionError)) return Failure(calculateNextVersionError);
 
             var nextVersion = nextVersionResult.Value!;

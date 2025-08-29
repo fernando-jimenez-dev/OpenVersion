@@ -42,7 +42,7 @@ public class ComputeNextVersionUseCaseTests
         var nextVersion = new DomainVersion(currentVersion.Id, currentVersion.ProjectId, currentVersion.IdentifierName, nextReleaseNumber, meta);
 
         _versionBumper
-            .CalculateNextVersion(branchName, currentVersions!, Arg.Any<CancellationToken>())
+            .CalculateNextVersion(branchName, currentVersions!, Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<DomainVersion>.Success(nextVersion));
         _versionRepository
             .SaveVersion(nextVersion, Arg.Any<CancellationToken>())
@@ -73,7 +73,7 @@ public class ComputeNextVersionUseCaseTests
         var newVersion = new DomainVersion(2, currentMainVersion.ProjectId, branchName, "1.0.0.1", "feature-new-item");
 
         _versionBumper
-            .CalculateNextVersion(branchName, currentVersions!, Arg.Any<CancellationToken>())
+            .CalculateNextVersion(branchName, currentVersions!, Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<DomainVersion>.Success(newVersion));
         _versionRepository
             .SaveVersion(newVersion, Arg.Any<CancellationToken>())
@@ -103,7 +103,7 @@ public class ComputeNextVersionUseCaseTests
 
         var newVersion = new DomainVersion(2, currentMainVersion.ProjectId, branchName, "1.0.0.1", "concurrent-meta");
         _versionBumper
-            .CalculateNextVersion(branchName, currentVersions!, Arg.Any<CancellationToken>())
+            .CalculateNextVersion(branchName, currentVersions!, Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<DomainVersion>.Success(newVersion));
 
         // Simulate 2 concurrency errors, then success
@@ -143,7 +143,7 @@ public class ComputeNextVersionUseCaseTests
             .GetCurrentVersions(Arg.Any<CancellationToken>())
             .Returns(Result<IReadOnlyDictionary<string, DomainVersion>>.Success(releases));
         _versionBumper
-            .CalculateNextVersion(branchName, releases!, Arg.Any<CancellationToken>())
+            .CalculateNextVersion(branchName, releases!, Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<DomainVersion>.Failure(new UnsupportedBranchError(branchName)));
 
         // Act
@@ -193,7 +193,7 @@ public class ComputeNextVersionUseCaseTests
         var newVersion = new DomainVersion(2, currentMainVersion.ProjectId, branchName, "1.0.0.1", "feature-new-item");
 
         _versionBumper
-            .CalculateNextVersion(branchName, currentVersions!, Arg.Any<CancellationToken>())
+            .CalculateNextVersion(branchName, currentVersions!, Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<DomainVersion>.Success(newVersion));
         _versionRepository
             .SaveVersion(newVersion, Arg.Any<CancellationToken>())
@@ -224,7 +224,7 @@ public class ComputeNextVersionUseCaseTests
 
         var newVersion = new DomainVersion(2, currentMainVersion.ProjectId, branchName, "1.0.0.1", "concurrent-meta");
         _versionBumper
-            .CalculateNextVersion(branchName, currentVersions!, Arg.Any<CancellationToken>())
+            .CalculateNextVersion(branchName, currentVersions!, Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<DomainVersion>.Success(newVersion));
 
         // Always return concurrency error
