@@ -34,12 +34,12 @@ public class ComputeNextVersionUseCaseTests
         string branchName, string releaseNumber, string meta, string nextReleaseNumber)
     {
         // Arrange
-        var currentVersion = new DomainVersion(1, 1, branchName, releaseNumber, DateTimeOffset.UtcNow.AddDays(-1));
-        var currentVersions = new Dictionary<string, DomainVersion?> { { branchName, currentVersion } };
+        var currentVersion = new DomainVersion(1, 1, branchName, releaseNumber);
+        var currentVersions = new Dictionary<string, DomainVersion> { { branchName, currentVersion } };
         _versionRepository.GetCurrentVersions(Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyDictionary<string, DomainVersion?>>.Success(currentVersions));
+            .Returns(Result<IReadOnlyDictionary<string, DomainVersion>>.Success(currentVersions));
 
-        var nextVersion = new DomainVersion(currentVersion.Id, currentVersion.ProjectId, currentVersion.IdentifierName, nextReleaseNumber, DateTimeOffset.UtcNow, meta);
+        var nextVersion = new DomainVersion(currentVersion.Id, currentVersion.ProjectId, currentVersion.IdentifierName, nextReleaseNumber, meta);
 
         _versionBumper
             .CalculateNextVersion(branchName, currentVersions!, Arg.Any<CancellationToken>())
@@ -64,13 +64,13 @@ public class ComputeNextVersionUseCaseTests
     {
         // Arrange
         var branchName = "feature/new-item";
-        var currentMainVersion = new DomainVersion(1, 1, "main", "1.0.0.0", DateTimeOffset.UtcNow.AddDays(-1));
-        var currentVersions = new Dictionary<string, DomainVersion?> { { branchName, currentMainVersion } };
+        var currentMainVersion = new DomainVersion(1, 1, "main", "1.0.0.0");
+        var currentVersions = new Dictionary<string, DomainVersion> { { branchName, currentMainVersion } };
         _versionRepository
             .GetCurrentVersions(Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyDictionary<string, DomainVersion?>>.Success(currentVersions));
+            .Returns(Result<IReadOnlyDictionary<string, DomainVersion>>.Success(currentVersions));
 
-        var newVersion = new DomainVersion(2, currentMainVersion.ProjectId, branchName, "1.0.0.1", DateTimeOffset.UtcNow, "feature-new-item");
+        var newVersion = new DomainVersion(2, currentMainVersion.ProjectId, branchName, "1.0.0.1", "feature-new-item");
 
         _versionBumper
             .CalculateNextVersion(branchName, currentVersions!, Arg.Any<CancellationToken>())
@@ -95,13 +95,13 @@ public class ComputeNextVersionUseCaseTests
     {
         // Arrange
         var branchName = "feature/concurrent";
-        var currentMainVersion = new DomainVersion(1, 1, branchName, "1.0.0.0", DateTimeOffset.UtcNow.AddDays(-1));
-        var currentVersions = new Dictionary<string, DomainVersion?> { { branchName, currentMainVersion } };
+        var currentMainVersion = new DomainVersion(1, 1, branchName, "1.0.0.0");
+        var currentVersions = new Dictionary<string, DomainVersion> { { branchName, currentMainVersion } };
         _versionRepository
             .GetCurrentVersions(Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyDictionary<string, DomainVersion?>>.Success(currentVersions));
+            .Returns(Result<IReadOnlyDictionary<string, DomainVersion>>.Success(currentVersions));
 
-        var newVersion = new DomainVersion(2, currentMainVersion.ProjectId, branchName, "1.0.0.1", DateTimeOffset.UtcNow, "concurrent-meta");
+        var newVersion = new DomainVersion(2, currentMainVersion.ProjectId, branchName, "1.0.0.1", "concurrent-meta");
         _versionBumper
             .CalculateNextVersion(branchName, currentVersions!, Arg.Any<CancellationToken>())
             .Returns(Result<DomainVersion>.Success(newVersion));
@@ -136,12 +136,12 @@ public class ComputeNextVersionUseCaseTests
     {
         // Arrange
         var branchName = "random-branch";
-        var release = new DomainVersion(1, 1, "main", "1.0.0.0", DateTimeOffset.UtcNow.AddDays(-1));
+        var release = new DomainVersion(1, 1, "main", "1.0.0.0");
         var releases = new Dictionary<string, DomainVersion?> { { branchName, release } };
 
         _versionRepository
             .GetCurrentVersions(Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyDictionary<string, DomainVersion?>>.Success(releases));
+            .Returns(Result<IReadOnlyDictionary<string, DomainVersion>>.Success(releases));
         _versionBumper
             .CalculateNextVersion(branchName, releases!, Arg.Any<CancellationToken>())
             .Returns(Result<DomainVersion>.Failure(new UnsupportedBranchError(branchName)));
@@ -163,7 +163,7 @@ public class ComputeNextVersionUseCaseTests
         // Arrange
         _versionRepository
             .GetCurrentVersions(Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyDictionary<string, DomainVersion?>>
+            .Returns(Result<IReadOnlyDictionary<string, DomainVersion>>
                 .Failure(new ApplicationError("unexpected", "Unexpected error"))
             );
 
@@ -184,13 +184,13 @@ public class ComputeNextVersionUseCaseTests
     {
         // Arrange
         var branchName = "feature/new-item";
-        var currentMainVersion = new DomainVersion(1, 1, "main", "1.0.0.0", DateTimeOffset.UtcNow.AddDays(-1));
-        var currentVersions = new Dictionary<string, DomainVersion?> { { branchName, currentMainVersion } };
+        var currentMainVersion = new DomainVersion(1, 1, "main", "1.0.0.0");
+        var currentVersions = new Dictionary<string, DomainVersion> { { branchName, currentMainVersion } };
         _versionRepository
             .GetCurrentVersions(Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyDictionary<string, DomainVersion?>>.Success(currentVersions));
+            .Returns(Result<IReadOnlyDictionary<string, DomainVersion>>.Success(currentVersions));
 
-        var newVersion = new DomainVersion(2, currentMainVersion.ProjectId, branchName, "1.0.0.1", DateTimeOffset.UtcNow, "feature-new-item");
+        var newVersion = new DomainVersion(2, currentMainVersion.ProjectId, branchName, "1.0.0.1", "feature-new-item");
 
         _versionBumper
             .CalculateNextVersion(branchName, currentVersions!, Arg.Any<CancellationToken>())
@@ -216,13 +216,13 @@ public class ComputeNextVersionUseCaseTests
     {
         // Arrange
         var branchName = "feature/concurrent";
-        var currentMainVersion = new DomainVersion(1, 1, branchName, "1.0.0.0", DateTimeOffset.UtcNow.AddDays(-1));
-        var currentVersions = new Dictionary<string, DomainVersion?> { { branchName, currentMainVersion } };
+        var currentMainVersion = new DomainVersion(1, 1, branchName, "1.0.0.0");
+        var currentVersions = new Dictionary<string, DomainVersion> { { branchName, currentMainVersion } };
         _versionRepository
             .GetCurrentVersions(Arg.Any<CancellationToken>())
-            .Returns(Result<IReadOnlyDictionary<string, DomainVersion?>>.Success(currentVersions));
+            .Returns(Result<IReadOnlyDictionary<string, DomainVersion>>.Success(currentVersions));
 
-        var newVersion = new DomainVersion(2, currentMainVersion.ProjectId, branchName, "1.0.0.1", DateTimeOffset.UtcNow, "concurrent-meta");
+        var newVersion = new DomainVersion(2, currentMainVersion.ProjectId, branchName, "1.0.0.1", "concurrent-meta");
         _versionBumper
             .CalculateNextVersion(branchName, currentVersions!, Arg.Any<CancellationToken>())
             .Returns(Result<DomainVersion>.Success(newVersion));
