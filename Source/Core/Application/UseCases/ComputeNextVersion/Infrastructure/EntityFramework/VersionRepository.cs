@@ -2,8 +2,8 @@
 using Application.Shared.OpenResult;
 using Application.UseCases.ComputeNextVersion.Abstractions;
 using Application.UseCases.ComputeNextVersion.Errors;
-using Application.UseCases.ComputeNextVersion.Models;
 using Application.UseCases.ComputeNextVersion.Infrastructure.EntityFramework.Entities;
+using Application.UseCases.ComputeNextVersion.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.UseCases.ComputeNextVersion.Infrastructure.EntityFramework;

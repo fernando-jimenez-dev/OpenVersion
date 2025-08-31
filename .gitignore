@@ -46,3 +46,10 @@ secrets
 
 .sonarqube
 sonarqubecoverage
+ 
+# SQLite development databases
+openversion.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3

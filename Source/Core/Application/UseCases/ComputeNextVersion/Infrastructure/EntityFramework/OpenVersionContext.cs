@@ -25,7 +25,13 @@ public class OpenVersionContext : DbContext
 
             entity.HasIndex(i => new { i.ProjectId, i.IdentifierName }).IsUnique();
 
-            entity.Property(e => e.LastUpdated).HasDefaultValue(DateTimeOffset.UtcNow).ValueGeneratedOnAddOrUpdate();
+            // Persist DateTimeOffset as ISO 8601 with UTC offset ('O' round-trip format)
+            // and set/update values from application code (no DB defaults)
+            entity.Property(e => e.LastUpdated)
+                .HasConversion(
+                    v => v.ToUniversalTime().ToString("O"),
+                    v => DateTimeOffset.Parse(v, null, System.Globalization.DateTimeStyles.RoundtripKind)
+                );
             entity.Property(e => e.ConcurrencyToken).IsConcurrencyToken();
         });
     }

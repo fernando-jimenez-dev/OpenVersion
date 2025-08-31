@@ -1,6 +1,11 @@
-﻿using Application.UseCases.CheckPulse;
+using Application.UseCases.CheckPulse;
 using Application.UseCases.CheckPulse.Abstractions;
 using Application.UseCases.CheckPulse.Infrastructure;
+using Application.UseCases.ComputeNextVersion;
+using Application.UseCases.ComputeNextVersion.Abstractions;
+using Application.UseCases.ComputeNextVersion.Infrastructure.EntityFramework;
+using Application.UseCases.ComputeNextVersion.Infrastructure.VersionBumping;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebAPI.Minimal.StartUp;
 
@@ -19,13 +24,26 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection ConfigureWebApiDependencies(this IServiceCollection services)
     {
         return services
-            .AddCheckPulseUseCase();
+            .AddCheckPulseUseCase()
+            .AddComputeNextVersionUseCase();
     }
 
     private static IServiceCollection AddCheckPulseUseCase(this IServiceCollection services)
     {
         services.AddScoped<ICheckPulseUseCase, CheckPulseUseCase>();
         services.AddScoped<ICheckPulseRepository, InMemoryCheckPulseRepository>();
+        return services;
+    }
+
+    private static IServiceCollection AddComputeNextVersionUseCase(this IServiceCollection services)
+    {
+        // DbContext - using SQLite file for simplicity
+        services.AddDbContext<OpenVersionContext>(options =>
+            options.UseSqlite("Data Source=openversion.db"));
+
+        services.AddScoped<IComputeNextVersionUseCase, ComputeNextVersionUseCase>();
+        services.AddScoped<IVersionRepository, VersionRepository>();
+        services.AddScoped<IVersionBumper, VersionBumper>(c => new VersionBumper());
         return services;
     }
 }
