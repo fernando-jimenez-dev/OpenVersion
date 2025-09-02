@@ -53,3 +53,6 @@ openversion.db
 *.db-wal
 *.sqlite
 *.sqlite3
+
+# Local secrets (not committed)
+Source/Presentation/WebAPI.Minimal/secrets.*.json

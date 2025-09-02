@@ -5,7 +5,7 @@ OpenVersion is a small, focused service that computes the next version number fo
 **Highlights**
 - **Purpose:** Compute semantic-like version numbers per branch (main/qa/feature/fix).
 - **Architecture:** Clean Cut Architecture (CCA) with explicit use cases and interfaces.
-- **Persistence:** SQLite via EF Core. Migrations live in code; execution happens through scripts.
+- **Persistence:** PostgreSQL (Npgsql) via EF Core. Connection string loaded from appsettings.json (no env vars).
 - **API:** Minimal API with two endpoints: health check and compute-next-version.
 - **Testing:** Unit tests for the use case rules and the HTTP endpoints.
 
@@ -13,7 +13,7 @@ OpenVersion is a small, focused service that computes the next version number fo
 - **.NET SDK:** 8.0+
 - **dotnet-ef:** 9.0.x global tool (`dotnet tool update -g dotnet-ef`)
 - **PowerShell:** 5.1+ or PowerShell 7+
-- Optional: SQLite tooling (e.g., DB Browser for SQLite) to inspect `openversion.db`.
+- PostgreSQL (local Docker or managed, e.g., Neon). Optional: psql or a GUI to inspect DB.
 
 **Architecture (CCA)**
 - **Core/Application:** Use cases, domain models, abstractions, and error types. No framework dependencies leak into use case logic.
@@ -49,35 +49,32 @@ Examples
   - Body: `{ "branchName": "feature/card-123" }`
 
 **Database and Migrations**
-- Connection string is configured in `Source/Presentation/WebAPI.Minimal/StartUp/ServiceCollectionExtensions.cs:31` as `UseSqlite("Data Source=openversion.db")`.
-- The SQLite file (`openversion.db`) is created by applying migrations and persists until deleted.
-- Migrations are code-first and live in the Application project under `UseCases/ComputeNextVersion/Infrastructure/EntityFramework/Migrations`.
-- Runtime does not auto-apply migrations; use the scripts below.
+- Connection string comes from `Source/Presentation/WebAPI.Minimal/appsettings.json` under `ConnectionStrings:OpenVersion` and is injected into `OpenVersionContext` via `UseNpgsql(...)` in `Source/Presentation/WebAPI.Minimal/StartUp/ServiceCollectionExtensions.cs`.
+- Runtime does not auto-apply migrations. Use EF CLI to manage migrations and generate SQL scripts if desired.
 
 **Scripts**
-- `scripts/New-Migration.ps1:1`
-  - Adds a new EF Core migration into the Application project.
+- `scripts/New-Migration.ps1`
+  - Adds a new EF Core migration into the Application project for PostgreSQL.
   - Usage: `./scripts/New-Migration.ps1 -Name AddSomeChange`
-- `scripts/Update-Database.ps1:1`
-  - Applies all pending migrations to the configured SQLite database (creates the file if missing).
+- `scripts/Update-Database.ps1`
+  - Applies pending migrations to the configured PostgreSQL database.
   - Usage: `./scripts/Update-Database.ps1`
   - Target a specific migration: `./scripts/Update-Database.ps1 -Migration 20250830162208_InitialCreate`
 
 Optional (SQL script generation)
-- Generate an idempotent script: `dotnet ef migrations script --idempotent -o scripts/migrations.sql -c Application.UseCases.ComputeNextVersion.Infrastructure.EntityFramework.OpenVersionContext -p Source/Core/Application/Application.csproj -s Source/Presentation/WebAPI.Minimal/WebAPI.Minimal.csproj`
+- Generate an idempotent script (PostgreSQL): `dotnet ef migrations script --idempotent -o scripts/migrations.sql -c Application.UseCases.ComputeNextVersion.Infrastructure.EntityFramework.OpenVersionContext -p Source/Core/Application/Application.csproj -s Source/Presentation/WebAPI.Minimal/WebAPI.Minimal.csproj`
 
 **Getting Started**
 - Install prerequisites: `.NET 8`, `dotnet-ef` tool, PowerShell.
-- Apply database migrations: `./scripts/Update-Database.ps1`.
+- Set `ConnectionStrings:OpenVersion` in `Source/Presentation/WebAPI.Minimal/appsettings.json` (e.g., Neon connection string).
+- Apply database migrations (optional for dev): `./scripts/Update-Database.ps1`.
 - Run the API: `dotnet run --project Source/Presentation/WebAPI.Minimal/WebAPI.Minimal.csproj`.
 - Browse Swagger UI (dev): `http://localhost:5000/swagger` (port depends on your profile).
 
 **Testing**
 - Run unit tests: `dotnet test -v minimal`
-- Endpoint tests: `Tests/Presentation/WebAPI.Minimal.UnitTests/UseCases/*`
+- Endpoint tests (E2E) use PostgreSQL; `TestWebApplicationFactory` reads `ConnectionStrings:OpenVersion` from test/appsettings.json and ensures a clean schema per run.
 - Use case tests: `Tests/Core/Application.UnitTests/UseCases/*`
 
 **Inspecting the Database**
-- VS Code extensions (SQLTools + SQLite driver, or alexcvzz.sqlite) or dedicated tools (DB Browser for SQLite, SQLiteStudio).
-- The file `openversion.db` resides in the API’s working directory; you can change to a fixed path if preferred.
-
+- Use psql or a Postgres GUI (e.g., pgAdmin, TablePlus). Ensure your Neon/local connection details match `appsettings.json`.

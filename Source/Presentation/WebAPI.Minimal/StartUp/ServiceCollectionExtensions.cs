@@ -21,11 +21,11 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The IServiceCollection to configure.</param>
     /// <returns>The configured IServiceCollection instance.</returns>
-    public static IServiceCollection ConfigureWebApiDependencies(this IServiceCollection services)
+    public static IServiceCollection ConfigureWebApiDependencies(this IServiceCollection services, IConfiguration configuration)
     {
         return services
             .AddCheckPulseUseCase()
-            .AddComputeNextVersionUseCase();
+            .AddComputeNextVersionUseCase(configuration);
     }
 
     private static IServiceCollection AddCheckPulseUseCase(this IServiceCollection services)
@@ -35,11 +35,15 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    private static IServiceCollection AddComputeNextVersionUseCase(this IServiceCollection services)
+    private static IServiceCollection AddComputeNextVersionUseCase(this IServiceCollection services, IConfiguration configuration)
     {
-        // DbContext - using SQLite file for simplicity
+        // DbContext - PostgreSQL via Npgsql, connection string from appsettings.json only
+        var connectionString = configuration.GetConnectionString("OpenVersion");
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new InvalidOperationException("ConnectionStrings:OpenVersion is required in configuration.");
+
         services.AddDbContext<OpenVersionContext>(options =>
-            options.UseSqlite("Data Source=openversion.db"));
+            options.UseNpgsql(connectionString));
 
         services.AddScoped<IComputeNextVersionUseCase, ComputeNextVersionUseCase>();
         services.AddScoped<IVersionRepository, VersionRepository>();

@@ -3,6 +3,7 @@ using Application.UseCases.ComputeNextVersion.Infrastructure.EntityFramework;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace WebAPI.Minimal.E2E.Support;
@@ -13,6 +14,17 @@ public class TestWebApplicationFactory : WebApplicationFactory<WebAPI.Minimal.Pr
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.ConfigureAppConfiguration((context, config) =>
+        {
+            // Load test-specific appsettings if present (no env vars)
+            var assemblyDir = Path.GetDirectoryName(typeof(TestWebApplicationFactory).Assembly.Location)!;
+            var testAppsettings = Path.Combine(assemblyDir, "appsettings.json");
+            if (File.Exists(testAppsettings))
+            {
+                config.AddJsonFile(testAppsettings, optional: true, reloadOnChange: false);
+            }
+        });
+
         builder.ConfigureServices(services =>
         {
             // Replace the DbContext with a test-specific SQLite file
@@ -21,9 +33,15 @@ public class TestWebApplicationFactory : WebApplicationFactory<WebAPI.Minimal.Pr
             if (descriptor is not null)
                 services.Remove(descriptor);
 
-            _dbPath = Path.Combine(Path.GetTempPath(), $"openversion-e2e-{Guid.NewGuid():N}.db");
+            // Read connection string from configuration (tests/appsettings.json or API appsettings.json)
+            using var spTemp = services.BuildServiceProvider();
+            var configuration = spTemp.GetRequiredService<IConfiguration>();
+            var connectionString = configuration.GetConnectionString("OpenVersion");
+            if (string.IsNullOrWhiteSpace(connectionString))
+                throw new InvalidOperationException("ConnectionStrings:OpenVersion is required for E2E tests.");
+
             services.AddDbContext<OpenVersionContext>(options =>
-                options.UseSqlite($"Data Source={_dbPath}"));
+                options.UseNpgsql(connectionString));
 
             // Replace repository to inject a small artificial delay before SaveChanges
             var repoDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IVersionRepository));
@@ -35,12 +53,12 @@ public class TestWebApplicationFactory : WebApplicationFactory<WebAPI.Minimal.Pr
                 return new VersionRepository(ctx, TimeSpan.FromMilliseconds(300));
             });
 
-            // Build provider and apply migrations for a clean schema
+            // Build provider and ensure clean schema for tests
             var sp = services.BuildServiceProvider();
             using var scope = sp.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<OpenVersionContext>();
             db.Database.EnsureDeleted();
-            db.Database.Migrate();
+            db.Database.EnsureCreated();
         });
     }
 
@@ -48,27 +66,6 @@ public class TestWebApplicationFactory : WebApplicationFactory<WebAPI.Minimal.Pr
     {
         base.Dispose(disposing);
         if (!disposing) return;
-        if (string.IsNullOrWhiteSpace(_dbPath)) return;
-
-        // Best-effort cleanup with a few retries in case the file is briefly locked
-        for (int i = 0; i < 5; i++)
-        {
-            try
-            {
-                if (File.Exists(_dbPath))
-                {
-                    File.Delete(_dbPath);
-                }
-                break;
-            }
-            catch (IOException)
-            {
-                Thread.Sleep(100);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                Thread.Sleep(100);
-            }
-        }
+        // No file cleanup needed for PostgreSQL connection
     }
 }

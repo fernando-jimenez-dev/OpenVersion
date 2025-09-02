@@ -4,24 +4,23 @@ using Application.UseCases.ComputeNextVersion.Errors;
 using Application.UseCases.ComputeNextVersion.Infrastructure.EntityFramework;
 using Application.UseCases.ComputeNextVersion.Infrastructure.EntityFramework.Entities;
 using Application.UseCases.ComputeNextVersion.Models;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 using Shouldly;
 
 namespace Application.UnitTests.UseCases.ComputeNextVersion.Infrastructure.EntityFramework;
 
-public class VersionRepositoryTests : IClassFixture<SqlitePerTest>
+public class VersionRepositoryTests : IClassFixture<InMemoryPerTest>
 {
     private readonly OpenVersionContext _openVersionContext;
     private readonly VersionRepository _versionRepository;
     private readonly IVersionBumper _versionBumper;
-    private readonly SqlitePerTest _sqlitePerTest;
+    private readonly InMemoryPerTest _inMemoryPerTest;
 
-    public VersionRepositoryTests(SqlitePerTest sqlitePerTest)
+    public VersionRepositoryTests(InMemoryPerTest inMemoryPerTest)
     {
-        _sqlitePerTest = sqlitePerTest;
-        _openVersionContext = new OpenVersionContext(sqlitePerTest.Options);
+        _inMemoryPerTest = inMemoryPerTest;
+        _openVersionContext = new OpenVersionContext(inMemoryPerTest.Options);
         _versionRepository = new VersionRepository(_openVersionContext);
         _versionBumper = Substitute.For<IVersionBumper>();
     }
@@ -121,7 +120,7 @@ public class VersionRepositoryTests : IClassFixture<SqlitePerTest>
         var savedVersion = savedVersions.Value!["main"];
 
         // Create two repositories with different delays
-        var secondOpenVersionContext = new OpenVersionContext(_sqlitePerTest.Options);
+        var secondOpenVersionContext = new OpenVersionContext(_inMemoryPerTest.Options);
         var slowRepository = new VersionRepository(secondOpenVersionContext, TimeSpan.FromMilliseconds(500));
 
         // Start the slow operation first
@@ -189,23 +188,20 @@ public class VersionRepositoryTests : IClassFixture<SqlitePerTest>
     }
 }
 
-public sealed class SqlitePerTest : IAsyncLifetime
+public sealed class InMemoryPerTest : IAsyncLifetime
 {
-    private SqliteConnection _sqliteConnection = default!;
     public DbContextOptions<OpenVersionContext> Options { get; private set; } = default!;
 
-    public async Task InitializeAsync()
+    public Task InitializeAsync()
     {
-        _sqliteConnection = new SqliteConnection("DataSource=:memory:;Cache=Shared");
-        await _sqliteConnection.OpenAsync();
-
+        var dbName = $"openversion-tests-{Guid.NewGuid():N}";
         Options = new DbContextOptionsBuilder<OpenVersionContext>()
-            .UseSqlite(_sqliteConnection)
+            .UseInMemoryDatabase(dbName)
             .Options;
 
         using var context = new OpenVersionContext(Options);
-        await context.Database.EnsureCreatedAsync();
+        return context.Database.EnsureCreatedAsync();
     }
 
-    public async Task DisposeAsync() => await _sqliteConnection.DisposeAsync();
+    public Task DisposeAsync() => Task.CompletedTask;
 }
