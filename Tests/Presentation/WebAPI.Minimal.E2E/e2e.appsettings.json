@@ -1,0 +1,5 @@
+{
+  "ConnectionStrings": {
+    "OpenVersion": "Host=localhost;Port=5432;Database=openversion_test;Username=dev;Password=dev;SSL Mode=Disable"
+  }
+}

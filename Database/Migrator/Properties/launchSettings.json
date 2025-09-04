@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "Migrator (Dev Up)": {
+      "commandName": "Project",
+      "commandLineArgs": "--conn \"Host=localhost;Port=5432;Database=openversion_migrator;Username=dev;Password=dev;SSL Mode=Disable\""
+    },
+    "Migrator (Dev Recreate)": {
+      "commandName": "Project",
+      "commandLineArgs": "--conn \"Host=localhost;Port=5432;Database=openversion_migrator;Username=dev;Password=dev;SSL Mode=Disable\" --recreate"
+    }
+  }
+}

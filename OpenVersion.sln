@@ -25,6 +25,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebAPI.Minimal.UnitTests", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebAPI.Minimal.E2E", "Tests\Presentation\WebAPI.Minimal.E2E\WebAPI.Minimal.E2E.csproj", "{1F78969E-FF9B-786F-D793-1924C207FFFF}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database", "Database", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Migrator", "Database\Migrator\Migrator.csproj", "{A3860A17-0C72-421F-A5BE-8CEF730F7048}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +55,10 @@ Global
 		{1F78969E-FF9B-786F-D793-1924C207FFFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1F78969E-FF9B-786F-D793-1924C207FFFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1F78969E-FF9B-786F-D793-1924C207FFFF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A3860A17-0C72-421F-A5BE-8CEF730F7048}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3860A17-0C72-421F-A5BE-8CEF730F7048}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3860A17-0C72-421F-A5BE-8CEF730F7048}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3860A17-0C72-421F-A5BE-8CEF730F7048}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -65,5 +73,9 @@ Global
 		{32970D73-3094-49BA-A810-2E77CCE3A1FF} = {F44203A1-740E-471A-8AD4-CFB4DEA08C5B}
 		{00720C06-A5C0-4D8C-B318-AC4C1F9EA48A} = {F1BA02D5-B153-4704-99A8-2BFEC9228993}
 		{1F78969E-FF9B-786F-D793-1924C207FFFF} = {F1BA02D5-B153-4704-99A8-2BFEC9228993}
+		{A3860A17-0C72-421F-A5BE-8CEF730F7048} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {09F4D3CC-FC87-44D3-9585-29086C309DAA}
 	EndGlobalSection
 EndGlobal

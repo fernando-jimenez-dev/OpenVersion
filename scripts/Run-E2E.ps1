@@ -1,3 +1,5 @@
+# May be replaced once I have a Cake Frosting Solution for this
+
 param()
 
 $ErrorActionPreference = 'Stop'

@@ -5,15 +5,14 @@ OpenVersion is a small, focused service that computes the next version number fo
 **Highlights**
 - **Purpose:** Compute semantic-like version numbers per branch (main/qa/feature/fix).
 - **Architecture:** Clean Cut Architecture (CCA) with explicit use cases and interfaces.
-- **Persistence:** PostgreSQL (Npgsql) via EF Core. Connection string loaded from appsettings.json (no env vars).
+- **Persistence:** PostgreSQL (Npgsql) with EF Core for data access; schema migrations via FluentMigrator (separate Migrator project).
 - **API:** Minimal API with two endpoints: health check and compute-next-version.
-- **Testing:** Unit tests for the use case rules and the HTTP endpoints.
+- **Testing:** Unit tests and realistic E2E tests using a real Postgres database.
 
 **Requirements**
 - **.NET SDK:** 8.0+
-- **dotnet-ef:** 9.0.x global tool (`dotnet tool update -g dotnet-ef`)
 - **PowerShell:** 5.1+ or PowerShell 7+
-- PostgreSQL (local Docker or managed, e.g., Neon). Optional: psql or a GUI to inspect DB.
+- PostgreSQL (local Docker or managed). Optional: psql or a GUI to inspect DB.
 
 **Architecture (CCA)**
 - **Core/Application:** Use cases, domain models, abstractions, and error types. No framework dependencies leak into use case logic.
@@ -24,8 +23,8 @@ OpenVersion is a small, focused service that computes the next version number fo
 **Project Structure**
 - `Source/Core/Application`: use cases, shared result/error types, EF Core context/repository, bump rules.
 - `Source/Presentation/WebAPI.Minimal`: Minimal API, DI setup, endpoint mapping, Swagger.
-- `Tests/*`: unit tests for application logic and web endpoints.
-- `scripts/*`: PowerShell scripts to create/apply EF Core migrations outside runtime.
+- `Database/Migrator`: console app that runs FluentMigrator migrations (PostgreSQL).
+- `Tests/*`: unit tests and E2E tests (real Postgres).
 
 **Endpoints**
 - `GET /check-pulse/`
@@ -49,32 +48,28 @@ Examples
   - Body: `{ "branchName": "feature/card-123" }`
 
 **Database and Migrations**
-- Connection string comes from `Source/Presentation/WebAPI.Minimal/appsettings.json` under `ConnectionStrings:OpenVersion` and is injected into `OpenVersionContext` via `UseNpgsql(...)` in `Source/Presentation/WebAPI.Minimal/StartUp/ServiceCollectionExtensions.cs`.
-- Runtime does not auto-apply migrations. Use EF CLI to manage migrations and generate SQL scripts if desired.
+- Connection string comes from layered appsettings in the WebAPI project:
+  - `appsettings.json` → `appsettings.{Environment}.json` → optional `secrets.{Environment}.json` (gitignored).
+- Migrations are handled by the Migrator project (FluentMigrator), not EF CLI.
+- Run locally:
+  - Latest: `dotnet run -p Database/Migrator/Migrator.csproj -- --conn "Host=localhost;Port=5432;Database=openversion_dev;Username=dev;Password=dev;SSL Mode=Disable"`
+  - Recreate: `dotnet run -p Database/Migrator/Migrator.csproj -- --conn "<cs>" --recreate`
 
-**Scripts**
-- `scripts/New-Migration.ps1`
-  - Adds a new EF Core migration into the Application project for PostgreSQL.
-  - Usage: `./scripts/New-Migration.ps1 -Name AddSomeChange`
-- `scripts/Update-Database.ps1`
-  - Applies pending migrations to the configured PostgreSQL database.
-  - Usage: `./scripts/Update-Database.ps1`
-  - Target a specific migration: `./scripts/Update-Database.ps1 -Migration 20250830162208_InitialCreate`
-
-Optional (SQL script generation)
-- Generate an idempotent script (PostgreSQL): `dotnet ef migrations script --idempotent -o scripts/migrations.sql -c Application.UseCases.ComputeNextVersion.Infrastructure.EntityFramework.OpenVersionContext -p Source/Core/Application/Application.csproj -s Source/Presentation/WebAPI.Minimal/WebAPI.Minimal.csproj`
+**E2E Tests**
+- Uses a unique Postgres database per test run (e.g., `openversion_e2e_{guid}`).
+- The test factory runs the Migrator in-process to build the schema, then wires DbContext to that DB, and drops it on dispose.
+- Base connection comes from `Tests/Presentation/WebAPI.Minimal.E2E/e2e.appsettings.json` (localhost/dev-only).
 
 **Getting Started**
-- Install prerequisites: `.NET 8`, `dotnet-ef` tool, PowerShell.
-- Set `ConnectionStrings:OpenVersion` in `Source/Presentation/WebAPI.Minimal/appsettings.json` (e.g., Neon connection string).
-- Apply database migrations (optional for dev): `./scripts/Update-Database.ps1`.
+- Install prerequisites: .NET 8, PowerShell, PostgreSQL (Docker is fine).
+- Set `ConnectionStrings:OpenVersion` in WebAPI `appsettings.Development.json` or `secrets.Development.json`.
+- Migrate (optional for dev): use the Migrator (see above) or rely on E2E to validate schema.
 - Run the API: `dotnet run --project Source/Presentation/WebAPI.Minimal/WebAPI.Minimal.csproj`.
-- Browse Swagger UI (dev): `http://localhost:5000/swagger` (port depends on your profile).
+- Swagger (dev): `http://localhost:<port>/swagger`.
 
 **Testing**
 - Run unit tests: `dotnet test -v minimal`
-- Endpoint tests (E2E) use PostgreSQL; `TestWebApplicationFactory` reads `ConnectionStrings:OpenVersion` from test/appsettings.json and ensures a clean schema per run.
-- Use case tests: `Tests/Core/Application.UnitTests/UseCases/*`
+- E2E tests: `dotnet test Tests/Presentation/WebAPI.Minimal.E2E/WebAPI.Minimal.E2E.csproj -v minimal`
 
 **Inspecting the Database**
 - Use psql or a Postgres GUI (e.g., pgAdmin, TablePlus). Ensure your Neon/local connection details match `appsettings.json`.

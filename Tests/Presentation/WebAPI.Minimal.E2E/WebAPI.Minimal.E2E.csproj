@@ -17,10 +17,17 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Source\Presentation\WebAPI.Minimal\WebAPI.Minimal.csproj" />
+    <ProjectReference Include="..\..\..\Database\Migrator\Migrator.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="e2e.appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
