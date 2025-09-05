@@ -33,7 +33,6 @@ nupkg/
 [Rr]eleases/
 x64/
 x86/
-build/
 bld/
 [Bb]in/
 [Oo]bj/
@@ -56,3 +55,5 @@ openversion.db
 
 # Local secrets (not committed)
 Source/Presentation/WebAPI.Minimal/secrets.*.json
+# Keep the non-secret template tracked
+!Source/Presentation/WebAPI.Minimal/secrets.template.json

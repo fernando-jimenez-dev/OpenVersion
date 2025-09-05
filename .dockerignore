@@ -1,0 +1,13 @@
+.git/
+.vs/
+.vscode/
+.sonarqube/
+artifacts/
+Build/
+**/bin/
+**/obj/
+Tests/
+
+# OS junk
+.DS_Store
+Thumbs.db
