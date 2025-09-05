@@ -31,6 +31,21 @@ public class TestWebApplicationFactory : WebApplicationFactory<WebAPI.Minimal.Pr
             {
                 config.AddJsonFile(e2eSettings, optional: true, reloadOnChange: false);
             }
+
+            // Allow optional secrets overlay for CI by materializing a secrets.json next to the test binaries
+            var e2eSecretsAssembly = Path.Combine(assemblyDir, "secrets.json");
+            if (File.Exists(e2eSecretsAssembly))
+            {
+                config.AddJsonFile(e2eSecretsAssembly, optional: true, reloadOnChange: false);
+            }
+
+            // Also probe the test project directory to ease CI steps that write secrets.json there
+            var testProjectDir = Path.GetFullPath(Path.Combine(assemblyDir, "..", "..", ".."));
+            var e2eSecretsProject = Path.Combine(testProjectDir, "secrets.json");
+            if (File.Exists(e2eSecretsProject))
+            {
+                config.AddJsonFile(e2eSecretsProject, optional: true, reloadOnChange: false);
+            }
         });
 
         builder.ConfigureServices(services =>
