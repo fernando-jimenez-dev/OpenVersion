@@ -148,3 +148,41 @@ Deploy.Docker
 - Docker deploy on port 8081 with Development secrets:
   - `./build.ps1 --target Deploy.Docker --dockerPort 8081 --dockerEnv Development --dockerSecretsPath "C:/path/secrets.Development.json"`
 
+## Database migration tasks
+
+Migrate.Db
+- Purpose: Build a PostgreSQL connection string from individual args and run Database/Migrator.
+- Args
+  - `--dbHost`: e.g., mypg.postgres.database.azure.com
+  - `--dbPort`: e.g., 5432
+  - `--dbName`: database name
+  - `--dbUser`: username
+  - `--dbPassword`: password
+  - `--dbSslMode`: Disable|Require|VerifyCA|VerifyFull
+  - `--dbRecreate`: optional (true|false). Default: false
+  - `--dbTarget`: optional long. Migrate up to specific version
+  - `--migratorPath`: optional path to a published Migrator (directory or Migrator.dll). If omitted, runs from the csproj.
+
+Publish.Migrator
+- Purpose: `dotnet publish` Database/Migrator to `artifacts/publish/Migrator/<Configuration>`.
+- Args
+  - `--configuration`: Build config
+
+Package.Migrator
+- Purpose: Zip published migrator to `artifacts/packages/Migrator/Migrator-<Configuration>.zip`.
+- Depends: Publish.Migrator
+- Args
+  - `--package`: Create zip (true|false). Default: false
+
+Publish.All
+- Purpose: Publish Web and Migrator; optionally package both when `--package=true`.
+- Depends: Publish, Publish.Migrator, Package.Migrator
+- Args
+  - `--package`: Create zips for both Web and Migrator
+
+Examples
+- `./build.ps1 --target Migrate.Db --dbHost "$env:PG_HOST" --dbPort "$env:PG_PORT" --dbName "$env:PG_DB" --dbUser "$env:PG_USER" --dbPassword "$env:PG_PASSWORD" --dbSslMode "$env:PG_SSLMODE"`
+- Run DB migrations using a published DLL:
+  - `./build.ps1 --target Migrate.Db --dbHost ... --dbPort 5432 --dbName ... --dbUser ... --dbPassword ... --dbSslMode Require --migratorPath "$(System.DefaultWorkingDirectory)/_YourBuild/drop/Migrator-Release"`
+- Produce both app + migrator zips:
+  - `./build.ps1 --target Publish.All --configuration Release --package true`

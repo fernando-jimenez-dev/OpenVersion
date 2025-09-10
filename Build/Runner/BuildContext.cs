@@ -28,6 +28,16 @@ public class BuildContext : FrostingContext
     public int DockerHostPort { get; }
     public string DockerEnvironment { get; }
     public FilePath? DockerSecretsPath { get; }
+    // Database (for Migrator)
+    public string? DbHost { get; }
+    public string? DbPort { get; }
+    public string? DbName { get; }
+    public string? DbUser { get; }
+    public string? DbPassword { get; }
+    public string? DbSslMode { get; }
+    public bool DbRecreate { get; }
+    public long? DbTargetMigration { get; }
+    public string? MigratorPath { get; }
     // Secrets materialization
     public FilePath SecretsTemplatePath { get; }
     public DirectoryPath SecretsOutDir { get; }
@@ -181,5 +191,29 @@ public class BuildContext : FrostingContext
                 ? new FilePath(secretsValuesPathArg)
                 : RepoRoot.CombineWithFilePath(new FilePath(secretsValuesPathArg));
         }
+
+        // DB args (optional; for Migrate.Db)
+        DbHost = context.Arguments.GetArgument("dbHost");
+        DbPort = context.Arguments.GetArgument("dbPort");
+        DbName = context.Arguments.GetArgument("dbName");
+        DbUser = context.Arguments.GetArgument("dbUser");
+        DbPassword = context.Arguments.GetArgument("dbPassword");
+        DbSslMode = context.Arguments.GetArgument("dbSslMode");
+
+        var dbRecreateArg = context.Arguments.GetArgument("dbRecreate");
+        DbRecreate = ParseBoolOrDefault(dbRecreateArg, false);
+
+        var dbTargetArg = context.Arguments.GetArgument("dbTarget");
+        if (!string.IsNullOrWhiteSpace(dbTargetArg) && long.TryParse(dbTargetArg, out var target))
+        {
+            DbTargetMigration = target;
+        }
+        else
+        {
+            DbTargetMigration = null;
+        }
+
+        // Optional explicit path to a published Migrator (directory or .dll)
+        MigratorPath = context.Arguments.GetArgument("migratorPath");
     }
 }

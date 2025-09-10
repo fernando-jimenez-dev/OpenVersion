@@ -55,5 +55,7 @@ openversion.db
 
 # Local secrets (not committed)
 Source/Presentation/WebAPI.Minimal/secrets.*.json
+Tests/**/secrets.json
+
 # Keep the non-secret template tracked
 !Source/Presentation/WebAPI.Minimal/secrets.template.json

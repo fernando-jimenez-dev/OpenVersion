@@ -65,3 +65,16 @@ public sealed class PublishWebTask : FrostingTask<BuildContext>
 public sealed class PublishTask : FrostingTask<BuildContext>
 {
 }
+
+[TaskName("Publish.All")]
+[IsDependentOn(typeof(PublishTask))]
+[IsDependentOn(typeof(PublishMigratorTask))]
+[IsDependentOn(typeof(PackageMigratorTask))]
+/// <summary>
+/// Orchestrates publishing and optional packaging for both Web and Migrator.
+/// - Runs Publish (Web) and Publish.Migrator always.
+/// - Runs Package.Web and Package.Migrator only when --package=true.
+/// </summary>
+public sealed class PublishAllTask : FrostingTask<BuildContext>
+{
+}
