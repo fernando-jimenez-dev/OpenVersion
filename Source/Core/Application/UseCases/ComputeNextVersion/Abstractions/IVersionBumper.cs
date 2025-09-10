@@ -7,6 +7,7 @@ public interface IVersionBumper
 {
     Task<Result<DomainVersion>> CalculateNextVersion(
         string branchName,
+        long projectId,
         IReadOnlyDictionary<string, DomainVersion> currentVersions,
         IReadOnlyDictionary<string, string?>? context = null,
         CancellationToken cancellationToken = default

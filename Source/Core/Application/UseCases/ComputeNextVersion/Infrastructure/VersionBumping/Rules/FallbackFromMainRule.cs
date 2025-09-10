@@ -13,18 +13,18 @@ public class FallbackFromMainRule : IVersionRule
     public bool CanApply(string branchName, IReadOnlyDictionary<string, DomainVersion> currentVersions, IReadOnlyDictionary<string, string?>? context)
         => !currentVersions.ContainsKey(branchName);
 
-    public Task<Result<DomainVersion>> Apply(string branchName, IReadOnlyDictionary<string, DomainVersion> currentVersions, IReadOnlyDictionary<string, string?>? context, CancellationToken cancellationToken = default)
+    public Task<Result<DomainVersion>> Apply(string branchName, long projectId, IReadOnlyDictionary<string, DomainVersion> currentVersions, IReadOnlyDictionary<string, string?>? context, CancellationToken cancellationToken = default)
     {
         if (!currentVersions.TryGetValue("main", out var current))
         {
             // Nothing exists – infer starting bump by branch category
             var initial = branchName switch
             {
-                "main" => new DomainVersion(0, 1, "main", "0.1.0.0", "minor"),
-                var b when b.StartsWith("qa") => new DomainVersion(0, 1, branchName, "0.0.1.0", "qa"),
-                var b when b.StartsWith("feature/") => new DomainVersion(0, 1, branchName, "0.0.0.1", FeatureMeta(branchName)),
-                var b when b.StartsWith("fix/") => new DomainVersion(0, 1, branchName, "0.0.0.1", FixMeta(branchName)),
-                _ => new DomainVersion(0, 1, branchName, "0.0.0.1", branchName)
+                "main" => new DomainVersion(0, projectId, "main", "0.1.0.0", "minor"),
+                var b when b.StartsWith("qa") => new DomainVersion(0, projectId, branchName, "0.0.1.0", "qa"),
+                var b when b.StartsWith("feature/") => new DomainVersion(0, projectId, branchName, "0.0.0.1", FeatureMeta(branchName)),
+                var b when b.StartsWith("fix/") => new DomainVersion(0, projectId, branchName, "0.0.0.1", FixMeta(branchName)),
+                _ => new DomainVersion(0, projectId, branchName, "0.0.0.1", branchName)
             };
             return Task.FromResult(Result<DomainVersion>.Success(initial));
         }

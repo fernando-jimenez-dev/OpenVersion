@@ -35,7 +35,7 @@ public class MainMinorBumpRuleTests
             { "main", new DomainVersion(1, 1, "main", currentRelease) }
         };
 
-        var applyResult = await _rule.Apply("main", currentVersions, context: null);
+        var applyResult = await _rule.Apply("main", 1, currentVersions, context: null);
 
         applyResult.Succeeded(out var newVersion).ShouldBeTrue();
         newVersion.ShouldNotBeNull();
@@ -48,7 +48,7 @@ public class MainMinorBumpRuleTests
     {
         var currentVersions = new Dictionary<string, DomainVersion>();
 
-        var applyResult = await _rule.Apply("main", currentVersions, context: null);
+        var applyResult = await _rule.Apply("main", 1, currentVersions, context: null);
 
         applyResult.Succeeded(out var newVersion).ShouldBeTrue();
         newVersion.ShouldNotBeNull();

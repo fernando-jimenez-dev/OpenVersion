@@ -12,12 +12,12 @@ public class QaBumpRule : IVersionRule
     public bool CanApply(string branchName, IReadOnlyDictionary<string, DomainVersion> currentVersions, IReadOnlyDictionary<string, string?>? context)
         => branchName.StartsWith("qa");
 
-    public Task<Result<DomainVersion>> Apply(string branchName, IReadOnlyDictionary<string, DomainVersion> currentVersions, IReadOnlyDictionary<string, string?>? context, CancellationToken cancellationToken = default)
+    public Task<Result<DomainVersion>> Apply(string branchName, long projectId, IReadOnlyDictionary<string, DomainVersion> currentVersions, IReadOnlyDictionary<string, string?>? context, CancellationToken cancellationToken = default)
     {
         if (!TryGetBaseVersion(branchName, currentVersions, out var current))
         {
             // Initial default when nothing exists
-            var initial = new DomainVersion(0, 1, branchName, "0.0.1.0", "qa");
+            var initial = new DomainVersion(0, projectId, branchName, "0.0.1.0", "qa");
             return Task.FromResult(Result<DomainVersion>.Success(initial));
         }
 

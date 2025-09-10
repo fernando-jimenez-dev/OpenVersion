@@ -19,11 +19,11 @@ public class VersionRepository : IVersionRepository
         _testDelay = testDelay;
     }
 
-    public async Task<Result<IReadOnlyDictionary<string, DomainVersion>>> GetCurrentVersions(CancellationToken cancellationToken = default)
+    public async Task<Result<IReadOnlyDictionary<string, DomainVersion>>> GetCurrentVersions(long projectId, CancellationToken cancellationToken = default)
     {
         // Return all versions, grouped by IdentifierName (for the current project)
         var versions = await _context.Versions
-            .Where(v => v.ProjectId == 1) // Assuming ProjectId = 1 for now
+            .Where(v => v.ProjectId == projectId)
             .AsNoTracking()
             .Select(v => v.ToDomain())
             .ToDictionaryAsync(v => v.IdentifierName, v => v, cancellationToken);

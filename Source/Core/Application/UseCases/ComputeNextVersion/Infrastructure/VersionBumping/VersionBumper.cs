@@ -21,6 +21,7 @@ public class VersionBumper : IVersionBumper
 
     public async Task<Result<DomainVersion>> CalculateNextVersion(
         string branchName,
+        long projectId,
         IReadOnlyDictionary<string, DomainVersion> currentVersions,
         IReadOnlyDictionary<string, string?>? context = null,
         CancellationToken cancellationToken = default)
@@ -29,7 +30,7 @@ public class VersionBumper : IVersionBumper
         {
             if (rule.CanApply(branchName, currentVersions, context))
             {
-                return await rule.Apply(branchName, currentVersions, context, cancellationToken);
+                return await rule.Apply(branchName, projectId, currentVersions, context, cancellationToken);
             }
         }
 

@@ -43,21 +43,21 @@ public class VersionBumperTests
         };
 
         var expectedVersion = new DomainVersion(0, 1, "main", "2.0.0.0");
-        rule2.Apply(Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>())
+        rule2.Apply(Arg.Any<string>(), Arg.Any<long>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<DomainVersion>.Success(expectedVersion));
 
         // Act
-        var result = await versionBumper.CalculateNextVersion("main", currentVersions);
+        var result = await versionBumper.CalculateNextVersion("main", 1, currentVersions);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
         result.Value.ShouldBe(expectedVersion);
 
         // Verify rule2 was called (first applicable rule by priority)
-        await rule2.Received(1).Apply(Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>());
+        await rule2.Received(1).Apply(Arg.Any<string>(), Arg.Any<long>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>());
 
         // Verify rule3 was never called (rule2 was selected first)
-        await rule3.DidNotReceive().Apply(Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>());
+        await rule3.DidNotReceive().Apply(Arg.Any<string>(), Arg.Any<long>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -90,22 +90,22 @@ public class VersionBumperTests
         };
 
         var expectedVersion = new DomainVersion(0, 1, "main", "2.0.0.0");
-        rule1.Apply(Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>())
+        rule1.Apply(Arg.Any<string>(), Arg.Any<long>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<DomainVersion>.Success(expectedVersion));
 
         // Act
-        var result = await versionBumper.CalculateNextVersion("main", currentVersions);
+        var result = await versionBumper.CalculateNextVersion("main", 1, currentVersions);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
         result.Value.ShouldBe(expectedVersion);
 
         // Verify rule1 was called (by priority)
-        await rule2.DidNotReceive().Apply(Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>());
-        await rule3.DidNotReceive().Apply(Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>());
+        await rule2.DidNotReceive().Apply(Arg.Any<string>(), Arg.Any<long>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>());
+        await rule3.DidNotReceive().Apply(Arg.Any<string>(), Arg.Any<long>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>());
 
         // Verify rule2 and rule3 was never called (rule1 was selected first)
-        await rule3.DidNotReceive().Apply(Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>());
+        await rule3.DidNotReceive().Apply(Arg.Any<string>(), Arg.Any<long>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -127,18 +127,18 @@ public class VersionBumperTests
         var context = new Dictionary<string, string?> { { "key", "value" } };
 
         var expectedVersion = new DomainVersion(0, 1, branchName, "1.0.0.1");
-        rule.Apply(Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>())
+        rule.Apply(Arg.Any<string>(), Arg.Any<long>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<DomainVersion>.Success(expectedVersion));
 
         // Act
-        var result = await versionBumper.CalculateNextVersion(branchName, currentVersions, context);
+        var result = await versionBumper.CalculateNextVersion(branchName, 1, currentVersions, context);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
 
         // Verify rule received correct parameters
         rule.Received(1).CanApply(branchName, currentVersions, context);
-        await rule.Received(1).Apply(branchName, currentVersions, context, Arg.Any<CancellationToken>());
+        await rule.Received(1).Apply(branchName, 1, currentVersions, context, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -154,11 +154,11 @@ public class VersionBumperTests
 
         var currentVersions = new Dictionary<string, DomainVersion>();
         var expectedVersion = new DomainVersion(0, 1, "main", "1.0.0.0");
-        rule.Apply(Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>())
+        rule.Apply(Arg.Any<string>(), Arg.Any<long>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<DomainVersion>.Success(expectedVersion));
 
         // Act
-        var result = await versionBumper.CalculateNextVersion("main", currentVersions);
+        var result = await versionBumper.CalculateNextVersion("main", 1, currentVersions);
 
         // Assert
         result.IsSuccess.ShouldBeTrue();
@@ -178,11 +178,11 @@ public class VersionBumperTests
 
         var currentVersions = new Dictionary<string, DomainVersion>();
         var expectedError = new ApplicationError("RuleError", "Rule failed");
-        rule.Apply(Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>())
+        rule.Apply(Arg.Any<string>(), Arg.Any<long>(), Arg.Any<IReadOnlyDictionary<string, DomainVersion>>(), Arg.Any<IReadOnlyDictionary<string, string?>?>(), Arg.Any<CancellationToken>())
             .Returns(Result<DomainVersion>.Failure(expectedError));
 
         // Act
-        var result = await versionBumper.CalculateNextVersion("main", currentVersions);
+        var result = await versionBumper.CalculateNextVersion("main", 1, currentVersions);
 
         // Assert
         result.IsSuccess.ShouldBeFalse();
@@ -213,7 +213,7 @@ public class VersionBumperTests
         var branchName = "unsupported-branch";
 
         // Act
-        var result = await versionBumper.CalculateNextVersion(branchName, currentVersions);
+        var result = await versionBumper.CalculateNextVersion(branchName, 1, currentVersions);
 
         // Assert
         result.IsSuccess.ShouldBeFalse();
@@ -223,3 +223,6 @@ public class VersionBumperTests
 
     #endregion Failure Scenarios
 }
+
+
+

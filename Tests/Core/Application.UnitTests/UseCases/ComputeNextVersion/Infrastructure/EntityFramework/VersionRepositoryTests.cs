@@ -36,7 +36,7 @@ public class VersionRepositoryTests : IClassFixture<InMemoryPerTest>
 
         // Act
         var saveResult = await _versionRepository.SaveVersion(mainVersion);
-        var getAllResult = await _versionRepository.GetCurrentVersions();
+        var getAllResult = await _versionRepository.GetCurrentVersions(1);
 
         // Assert
         saveResult.IsSuccess.ShouldBeTrue();
@@ -60,7 +60,7 @@ public class VersionRepositoryTests : IClassFixture<InMemoryPerTest>
 
         // Act
         var saveResult = await _versionRepository.SaveVersion(updated);
-        var getAllResult = await _versionRepository.GetCurrentVersions();
+        var getAllResult = await _versionRepository.GetCurrentVersions(1);
 
         // Assert
         saveResult.IsSuccess.ShouldBeTrue();
@@ -79,7 +79,7 @@ public class VersionRepositoryTests : IClassFixture<InMemoryPerTest>
         // Arrange
         await ResetDatabaseAsync();
 
-        // Project 1 rows (repo currently filters to ProjectId == 1)
+        // Project 1 rows
         await _versionRepository.SaveVersion(new DomainVersion(0, 1, "main", "1.0.0.0"));
         await _versionRepository.SaveVersion(new DomainVersion(0, 1, "feature/one", "1.0.0.1"));
 
@@ -90,7 +90,7 @@ public class VersionRepositoryTests : IClassFixture<InMemoryPerTest>
         await _openVersionContext.SaveChangesAsync();
 
         // Act
-        var getAllResult = await _versionRepository.GetCurrentVersions();
+        var getAllResult = await _versionRepository.GetCurrentVersions(1);
 
         // Assert
         getAllResult.IsSuccess.ShouldBeTrue();
@@ -116,7 +116,7 @@ public class VersionRepositoryTests : IClassFixture<InMemoryPerTest>
         await _versionRepository.SaveVersion(initialVersion);
 
         // Get the saved version to know its ID
-        var savedVersions = await _versionRepository.GetCurrentVersions();
+        var savedVersions = await _versionRepository.GetCurrentVersions(1);
         var savedVersion = savedVersions.Value!["main"];
 
         // Create two repositories with different delays
@@ -152,7 +152,7 @@ public class VersionRepositoryTests : IClassFixture<InMemoryPerTest>
         await ResetDatabaseAsync();
 
         // Act
-        var getAllResult = await _versionRepository.GetCurrentVersions();
+        var getAllResult = await _versionRepository.GetCurrentVersions(1);
 
         // Assert
         getAllResult.IsSuccess.ShouldBeTrue();

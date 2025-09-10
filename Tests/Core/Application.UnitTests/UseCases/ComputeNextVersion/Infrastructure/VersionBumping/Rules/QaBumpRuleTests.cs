@@ -35,7 +35,7 @@ public class QaBumpRuleTests
             { "qa", new DomainVersion(1, 1, "qa", currentRelease) }
         };
 
-        var applyResult = await _rule.Apply("qa", currentVersions, context: null);
+        var applyResult = await _rule.Apply("qa", 1, currentVersions, context: null);
 
         applyResult.Succeeded(out var newVersion).ShouldBeTrue();
         newVersion.ShouldNotBeNull();
@@ -48,7 +48,7 @@ public class QaBumpRuleTests
     {
         var currentVersions = new Dictionary<string, DomainVersion>();
 
-        var applyResult = await _rule.Apply("qa", currentVersions, context: null);
+        var applyResult = await _rule.Apply("qa", 1, currentVersions, context: null);
 
         applyResult.Succeeded(out var newVersion).ShouldBeTrue();
         newVersion.ShouldNotBeNull();
@@ -64,7 +64,7 @@ public class QaBumpRuleTests
             { "main", new DomainVersion(1, 1, "main", "1.0.0.0") }
         };
 
-        var applyResult = await _rule.Apply("qa", currentVersions, context: null);
+        var applyResult = await _rule.Apply("qa", 1, currentVersions, context: null);
 
         applyResult.Succeeded(out var newVersion).ShouldBeTrue();
         newVersion.ShouldNotBeNull();

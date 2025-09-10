@@ -39,7 +39,7 @@ public class MainMajorBumpRuleTests
             { "isMajor", "true" }
         };
 
-        var applyResult = await _rule.Apply("main", currentVersions, context);
+        var applyResult = await _rule.Apply("main", 1, currentVersions, context);
 
         applyResult.Succeeded(out var newVersion).ShouldBeTrue();
         newVersion.ShouldNotBeNull();
@@ -56,7 +56,7 @@ public class MainMajorBumpRuleTests
             { "isMajor", "true" }
         };
 
-        var applyResult = await _rule.Apply("main", currentVersions, context);
+        var applyResult = await _rule.Apply("main", 1, currentVersions, context);
 
         applyResult.Succeeded(out var newVersion).ShouldBeTrue();
         newVersion.ShouldNotBeNull();

@@ -15,6 +15,7 @@ public interface IVersionRule
 
     Task<Result<DomainVersion>> Apply(
         string branchName,
+        long projectId,
         IReadOnlyDictionary<string, DomainVersion> currentVersions,
         IReadOnlyDictionary<string, string?>? context,
         CancellationToken cancellationToken = default);

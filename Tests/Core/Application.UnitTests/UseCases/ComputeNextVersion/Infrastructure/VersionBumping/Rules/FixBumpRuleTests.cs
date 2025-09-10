@@ -35,7 +35,7 @@ public class FixBumpRuleTests
             { "fix/item-a", new DomainVersion(1, 1, "fix/item-a", currentRelease) }
         };
 
-        var applyResult = await _rule.Apply("fix/item-a", currentVersions, context: null);
+        var applyResult = await _rule.Apply("fix/item-a", 1, currentVersions, context: null);
 
         applyResult.Succeeded(out var newVersion).ShouldBeTrue();
         newVersion.ShouldNotBeNull();
@@ -48,7 +48,7 @@ public class FixBumpRuleTests
     {
         var currentVersions = new Dictionary<string, DomainVersion>();
 
-        var applyResult = await _rule.Apply("fix/item-a", currentVersions, context: null);
+        var applyResult = await _rule.Apply("fix/item-a", 1, currentVersions, context: null);
 
         applyResult.Succeeded(out var newVersion).ShouldBeTrue();
         newVersion.ShouldNotBeNull();
@@ -64,7 +64,7 @@ public class FixBumpRuleTests
             { "main", new DomainVersion(1, 1, "main", "1.0.0.0") }
         };
 
-        var applyResult = await _rule.Apply("fix/item-a", currentVersions, context: null);
+        var applyResult = await _rule.Apply("fix/item-a", 1, currentVersions, context: null);
 
         applyResult.Succeeded(out var newVersion).ShouldBeTrue();
         newVersion.ShouldNotBeNull();

@@ -12,11 +12,11 @@ public class FixBumpRule : IVersionRule
     public bool CanApply(string branchName, IReadOnlyDictionary<string, DomainVersion> currentVersions, IReadOnlyDictionary<string, string?>? context)
         => branchName.StartsWith("fix/");
 
-    public Task<Result<DomainVersion>> Apply(string branchName, IReadOnlyDictionary<string, DomainVersion> currentVersions, IReadOnlyDictionary<string, string?>? context, CancellationToken cancellationToken = default)
+    public Task<Result<DomainVersion>> Apply(string branchName, long projectId, IReadOnlyDictionary<string, DomainVersion> currentVersions, IReadOnlyDictionary<string, string?>? context, CancellationToken cancellationToken = default)
     {
         if (!TryGetBaseVersion(branchName, currentVersions, out var current))
         {
-            var initial = new DomainVersion(0, 1, branchName, "0.0.0.1", Meta(branchName));
+            var initial = new DomainVersion(0, projectId, branchName, "0.0.0.1", Meta(branchName));
             return Task.FromResult(Result<DomainVersion>.Success(initial));
         }
 

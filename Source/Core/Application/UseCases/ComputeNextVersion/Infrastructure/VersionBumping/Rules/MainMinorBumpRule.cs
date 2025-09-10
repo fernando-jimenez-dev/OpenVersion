@@ -12,11 +12,11 @@ public class MainMinorBumpRule : IVersionRule
     public bool CanApply(string branchName, IReadOnlyDictionary<string, DomainVersion> currentVersions, IReadOnlyDictionary<string, string?>? context)
         => branchName == "main" && !IsTrue(context, "isMajor");
 
-    public Task<Result<DomainVersion>> Apply(string branchName, IReadOnlyDictionary<string, DomainVersion> currentVersions, IReadOnlyDictionary<string, string?>? context, CancellationToken cancellationToken = default)
+    public Task<Result<DomainVersion>> Apply(string branchName, long projectId, IReadOnlyDictionary<string, DomainVersion> currentVersions, IReadOnlyDictionary<string, string?>? context, CancellationToken cancellationToken = default)
     {
         if (!currentVersions.TryGetValue("main", out var current))
         {
-            var initial = new DomainVersion(0, 1, "main", "0.1.0.0", "minor");
+            var initial = new DomainVersion(0, projectId, "main", "0.1.0.0", "minor");
             return Task.FromResult(Result<DomainVersion>.Success(initial));
         }
 

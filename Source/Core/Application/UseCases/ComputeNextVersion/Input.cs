@@ -2,5 +2,6 @@
 
 public partial interface IComputeNextVersionUseCase
 {
-    public record Input(string BranchName, IReadOnlyDictionary<string, string?>? Context = null);
+    // ProjectId is optional; defaults to 1 to preserve current behavior.
+    public record Input(string BranchName, long ProjectId = 1, IReadOnlyDictionary<string, string?>? Context = null);
 }
