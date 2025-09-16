@@ -5,6 +5,7 @@ using Application.UseCases.ComputeNextVersion;
 using Application.UseCases.ComputeNextVersion.Abstractions;
 using Application.UseCases.ComputeNextVersion.Infrastructure.EntityFramework;
 using Application.UseCases.ComputeNextVersion.Infrastructure.VersionBumping;
+using Application.UseCases.GetProjectVersions;
 using Microsoft.EntityFrameworkCore;
 
 namespace WebAPI.Minimal.StartUp;
@@ -25,7 +26,8 @@ public static class ServiceCollectionExtensions
     {
         return services
             .AddCheckPulseUseCase()
-            .AddComputeNextVersionUseCase(configuration);
+            .AddComputeNextVersionUseCase(configuration)
+            .AddGetProjectVersionsUseCase();
     }
 
     private static IServiceCollection AddCheckPulseUseCase(this IServiceCollection services)
@@ -48,6 +50,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IComputeNextVersionUseCase, ComputeNextVersionUseCase>();
         services.AddScoped<IVersionRepository, VersionRepository>();
         services.AddScoped<IVersionBumper, VersionBumper>(c => new VersionBumper());
+        return services;
+    }
+
+    private static IServiceCollection AddGetProjectVersionsUseCase(this IServiceCollection services)
+    {
+        services.AddScoped<IGetProjectVersionsUseCase, GetProjectVersionsUseCase>();
         return services;
     }
 }

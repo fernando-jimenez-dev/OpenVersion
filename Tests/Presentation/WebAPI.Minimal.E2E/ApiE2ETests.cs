@@ -6,6 +6,7 @@ using Application.UseCases.ComputeNextVersion.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using System.Linq;
 using System.Net;
 using System.Net.Http.Json;
 using WebAPI.Minimal.E2E.Support;
@@ -175,8 +176,33 @@ public class ApiE2ETests
         Assert.Contains(HttpStatusCode.Conflict, statuses);
     }
 
+    [Fact]
+    public async Task GetProjectVersions_Should_ReturnExistingVersionsForProject()
+    {
+        using var factory = new TestWebApplicationFactory();
+        var client = factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("http://localhost") });
+
+        var seedMain = await client.PostAsJsonAsync("/compute-next-version/", new { branchName = "main" });
+        Assert.Equal(HttpStatusCode.OK, seedMain.StatusCode);
+
+        var seedFeature = await client.PostAsJsonAsync("/compute-next-version/", new { branchName = "feature/e2e" });
+        Assert.Equal(HttpStatusCode.OK, seedFeature.StatusCode);
+
+        var response = await client.GetAsync("/projects/1/versions/");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var payload = await response.Content.ReadFromJsonAsync<GetProjectVersionsPayload>();
+        Assert.NotNull(payload);
+        Assert.Equal(1, payload!.ProjectId);
+        Assert.True(payload.Versions.Length >= 2);
+        Assert.Contains(payload.Versions, version => version.IdentifierName == "main");
+        Assert.Contains(payload.Versions, version => version.IdentifierName == "feature/e2e");
+    }
+
     private record CheckPulseResponse(string Message);
     private record ComputeNextVersionPayload(string NextVersion);
+    private record GetProjectVersionsPayload(long ProjectId, ProjectVersionItem[] Versions);
+    private record ProjectVersionItem(long Id, string IdentifierName, string ReleaseNumber, string? Meta);
 
     // Factories and stubs for error-path testing
     private sealed class ErrorFactory : WebApplicationFactory<WebAPI.Minimal.Program>
